@@ -1,65 +1,124 @@
-import Image from "next/image";
+'use client';
+import { useState, useCallback, useEffect } from 'react';
+import BootSequence from '@/components/BootSequence';
+import TronCanvas from '@/components/TronCanvas';
+import CRTOverlay from '@/components/CRTOverlay';
+import CustomCursor from '@/components/CustomCursor';
+import ParticleSystem from '@/components/ParticleSystem';
+import Navigation from '@/components/Navigation';
+import HeroSection from '@/components/HeroSection';
+import Terminal from '@/components/Terminal';
+import ProjectsSection from '@/components/ProjectsSection';
+import BlogsSection from '@/components/BlogsSection';
+import Footer from '@/components/Footer';
+import TronGame from '@/components/TronGame';
+import AudioToggle from '@/components/AudioToggle';
+import PlayersOnline from '@/components/PlayersOnline';
+import CreditsCounter from '@/components/CreditsCounter';
+import { useAudio } from '@/hooks/useAudio';
+import { useKonamiCode } from '@/hooks/useKonamiCode';
+import { site } from '@/lib/siteConfig';
 
 export default function Home() {
+  const [booted, setBooted] = useState(false);
+  const [siteVisible, setSiteVisible] = useState(false);
+  const [gameOpen, setGameOpen] = useState(false);
+  const [konamiActive, setKonamiActive] = useState(false);
+
+  const audio = useAudio();
+
+  const handleBootComplete = useCallback(() => {
+    setBooted(true);
+    setTimeout(() => setSiteVisible(true), 100);
+  }, []);
+
+  useKonamiCode(useCallback(() => {
+    audio.konami();
+    setKonamiActive(true);
+
+    const spawn = (window as unknown as { spawnParticles?: (x: number, y: number, count: number) => void }).spawnParticles;
+    if (spawn) {
+      for (let i = 0; i < 10; i++) {
+        setTimeout(() => {
+          spawn(Math.random() * window.innerWidth, Math.random() * window.innerHeight, 30);
+        }, i * 100);
+      }
+    }
+
+    setTimeout(() => setKonamiActive(false), 3000);
+  }, [audio]));
+
+  const handleAudioToggle = useCallback(() => {
+    audio.toggle();
+  }, [audio]);
+
+  const handleBootStart = useCallback(() => {
+    audio.initAndPlay();
+  }, [audio]);
+
+  if (!booted) {
+    return <BootSequence onComplete={handleBootComplete} onStart={handleBootStart} />;
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <>
+      {/* All fixed/position elements outside the animated wrapper to prevent stacking-context issues */}
+      {siteVisible && (
+        <>
+          <TronCanvas />
+          <ParticleSystem />
+          <CRTOverlay />
+          <CustomCursor />
+          <AudioToggle enabled={audio.enabled} onToggle={handleAudioToggle} />
+          <PlayersOnline />
+          <CreditsCounter />
+        </>
+      )}
+
+      <div className={siteVisible ? 'site-crt-on' : 'opacity-0'}>
+
+        <Navigation
+          onHover={audio.hover}
+          onNavigate={audio.navigate}
+          onGameOpen={() => setGameOpen(true)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {konamiActive && (
+          <div
+            className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/80 pointer-events-none"
+            style={{ animation: 'fadeInUp 0.3s ease' }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <div
+              className="text-[clamp(20px,5vw,48px)] text-orange tracking-[6px]"
+              style={{
+                fontFamily: "'Press Start 2P', monospace",
+                textShadow: '0 0 20px rgba(255,106,0,0.8), 0 0 60px rgba(255,106,0,0.4)',
+                animation: 'blink 0.5s ease infinite alternate',
+              }}
+            >
+              {site.konamiText}
+            </div>
+          </div>
+        )}
+
+        <main className="relative z-[2]">
+          <HeroSection />
+          <Terminal onGameOpen={() => setGameOpen(true)} />
+          <ProjectsSection onHover={audio.hover} />
+          <BlogsSection onHover={audio.hover} />
+          <Footer />
+        </main>
+
+        <TronGame
+          isOpen={gameOpen}
+          onClose={() => setGameOpen(false)}
+          onScore={() => {}}
+          audioHover={audio.hover}
+          audioCrash={audio.crash}
+          audioScore={audio.score}
+          audioClick={audio.click}
+        />
+      </div>
+    </>
   );
 }
