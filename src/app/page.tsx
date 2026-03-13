@@ -72,6 +72,15 @@ export default function Home() {
           <AudioToggle enabled={audio.enabled} onToggle={handleAudioToggle} />
           <PlayersOnline />
           <CreditsCounter />
+          <TronGame
+            isOpen={gameOpen}
+            onClose={() => setGameOpen(false)}
+            onScore={() => {}}
+            audioHover={audio.hover}
+            audioCrash={audio.crash}
+            audioScore={audio.score}
+            audioClick={audio.click}
+          />
         </>
       )}
 
@@ -109,15 +118,6 @@ export default function Home() {
           <Footer />
         </main>
 
-        <TronGame
-          isOpen={gameOpen}
-          onClose={() => setGameOpen(false)}
-          onScore={() => {}}
-          audioHover={audio.hover}
-          audioCrash={audio.crash}
-          audioScore={audio.score}
-          audioClick={audio.click}
-        />
       </div>
     </>
   );

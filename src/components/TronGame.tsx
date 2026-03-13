@@ -73,52 +73,79 @@ function drawPixelCycle(
   ctx.restore();
 }
 
-// ── Double rail trail ────────────────────────────────────────────────────────
+// ── Double rail trail (batched) ──────────────────────────────────────────────
 function drawDoubleRailTrail(
   ctx: CanvasRenderingContext2D,
   trail: { x: number; y: number }[],
   color: string,
   CELL: number
 ) {
-  for (let i = 1; i < trail.length; i++) {
-    const t = i / trail.length;
-    const alpha = 0.3 + t * 0.5;
-    const prev = trail[i - 1];
-    const cur = trail[i];
+  if (trail.length < 2) return;
 
-    const dx = (cur.x - prev.x) || 0;
-    const dy = (cur.y - prev.y) || 0;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const nx = -dy / len * (CELL * 0.4);
-    const ny = dx / len * (CELL * 0.4);
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.fillStyle = color;
 
-    const px = prev.x + CELL / 2, py = prev.y + CELL / 2;
-    const cx = cur.x + CELL / 2, cy = cur.y + CELL / 2;
+  const halfC = CELL / 2;
+  const railW = CELL * 0.4;
+  const len = trail.length;
+  const bucketCount = 4;
 
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 8;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
+  for (let b = 0; b < bucketCount; b++) {
+    const startIdx = Math.max(1, Math.floor(b / bucketCount * len));
+    const endIdx = Math.floor((b + 1) / bucketCount * len);
+    const midT = ((startIdx + endIdx) / 2) / len;
+    const alpha = 0.3 + midT * 0.5;
+
+    // Top rail
     ctx.globalAlpha = alpha;
-
     ctx.beginPath();
-    ctx.moveTo(px + nx, py + ny);
-    ctx.lineTo(cx + nx, cy + ny);
+    for (let i = startIdx; i < endIdx && i < len; i++) {
+      const prev = trail[i - 1], cur = trail[i];
+      const dx = (cur.x - prev.x) || 0;
+      const dy = (cur.y - prev.y) || 0;
+      const segLen = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / segLen * railW;
+      const ny = dx / segLen * railW;
+      ctx.moveTo(prev.x + halfC + nx, prev.y + halfC + ny);
+      ctx.lineTo(cur.x + halfC + nx, cur.y + halfC + ny);
+    }
     ctx.stroke();
 
+    // Bottom rail
     ctx.beginPath();
-    ctx.moveTo(px - nx, py - ny);
-    ctx.lineTo(cx - nx, cy - ny);
+    for (let i = startIdx; i < endIdx && i < len; i++) {
+      const prev = trail[i - 1], cur = trail[i];
+      const dx = (cur.x - prev.x) || 0;
+      const dy = (cur.y - prev.y) || 0;
+      const segLen = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / segLen * railW;
+      const ny = dx / segLen * railW;
+      ctx.moveTo(prev.x + halfC - nx, prev.y + halfC - ny);
+      ctx.lineTo(cur.x + halfC - nx, cur.y + halfC - ny);
+    }
     ctx.stroke();
 
+    // Glow fill
     ctx.globalAlpha = alpha * 0.15;
-    ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.moveTo(px + nx, py + ny);
-    ctx.lineTo(cx + nx, cy + ny);
-    ctx.lineTo(cx - nx, cy - ny);
-    ctx.lineTo(px - nx, py - ny);
-    ctx.closePath();
+    for (let i = startIdx; i < endIdx && i < len; i++) {
+      const prev = trail[i - 1], cur = trail[i];
+      const dx = (cur.x - prev.x) || 0;
+      const dy = (cur.y - prev.y) || 0;
+      const segLen = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / segLen * railW;
+      const ny = dx / segLen * railW;
+      const px = prev.x + halfC, py = prev.y + halfC;
+      const cx = cur.x + halfC, cy = cur.y + halfC;
+      ctx.moveTo(px + nx, py + ny);
+      ctx.lineTo(cx + nx, cy + ny);
+      ctx.lineTo(cx - nx, cy - ny);
+      ctx.lineTo(px - nx, py - ny);
+      ctx.closePath();
+    }
     ctx.fill();
   }
 }
@@ -138,9 +165,10 @@ const GAME_SPEED = 80; // ms per tick
 
 export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCrash, audioScore, audioClick }: TronGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameover'>('menu');
+  const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameover' | 'win'>('menu');
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const playerRef = useRef<GameCycle | null>(null);
   const aiRef = useRef<GameCycle | null>(null);
   const dirQueueRef = useRef<[number, number][]>([]);
@@ -192,6 +220,24 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
     });
   }, [audioCrash]);
 
+  const winGame = useCallback(() => {
+    if (tickRef.current) clearInterval(tickRef.current);
+    if (scoreTimerRef.current) clearInterval(scoreTimerRef.current);
+    audioScore();
+    setScore(prev => {
+      const final = prev + 50;
+      setHighScore(hs => Math.max(hs, final));
+      return final;
+    });
+    setGameState('win');
+  }, [audioScore]);
+
+  const closeGame = useCallback(() => {
+    if (tickRef.current) clearInterval(tickRef.current);
+    if (scoreTimerRef.current) clearInterval(scoreTimerRef.current);
+    onClose();
+  }, [onClose]);
+
   // Game loop
   useEffect(() => {
     if (!isOpen || gameState !== 'playing') return;
@@ -233,16 +279,8 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
       }
       if (checkCollision(ai, w, h, allTrails)) {
         ai.alive = false;
-        audioScore();
-        setScore(prev => prev + 50);
-        // Respawn AI
-        const newAi = createGameCycle(
-          Math.floor(Math.random() * w / CELL) * CELL,
-          Math.floor(Math.random() * h / CELL) * CELL,
-          Math.random() < 0.5 ? 1 : -1,
-          0
-        );
-        aiRef.current = newAi;
+        winGame();
+        return;
       }
 
       // Draw
@@ -291,7 +329,7 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
     };
-  }, [isOpen, gameState, getCanvasSize, endGame, audioScore]);
+  }, [isOpen, gameState, getCanvasSize, endGame, winGame]);
 
   // Key handlers
   useEffect(() => {
@@ -320,23 +358,21 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
       }
 
       if (e.key === 'Escape') {
-        if (tickRef.current) clearInterval(tickRef.current);
-        if (scoreTimerRef.current) clearInterval(scoreTimerRef.current);
-        onClose();
+        closeGame();
       }
 
       if (gameState === 'menu' && (e.key === 'Enter' || e.key === ' ')) {
         startGame();
       }
 
-      if (gameState === 'gameover' && (e.key === 'Enter' || e.key === ' ')) {
+      if ((gameState === 'gameover' || gameState === 'win') && (e.key === 'Enter' || e.key === ' ')) {
         startGame();
       }
     };
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, gameState, onClose, startGame]);
+  }, [isOpen, gameState, closeGame, startGame]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -346,6 +382,68 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
     };
   }, []);
 
+  // Mobile detection
+  useEffect(() => {
+    setIsMobile('ontouchstart' in window || window.innerWidth <= 768);
+  }, []);
+
+  // Lock body scroll when game is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [isOpen]);
+
+  // Touch/swipe controls
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let startX = 0;
+    let startY = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (gameState === 'playing') e.preventDefault();
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      const threshold = 30;
+
+      if (gameState === 'playing') {
+        if (absDx > absDy && absDx > threshold) {
+          dirQueueRef.current.push([dx > 0 ? 1 : -1, 0]);
+        } else if (absDy > absDx && absDy > threshold) {
+          dirQueueRef.current.push([0, dy > 0 ? 1 : -1]);
+        }
+      }
+
+      // Tap to start/retry
+      if (Math.max(absDx, absDy) < threshold) {
+        if (gameState === 'menu' || gameState === 'gameover' || gameState === 'win') startGame();
+      }
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isOpen, gameState, startGame]);
+
   if (!isOpen) return null;
 
   return (
@@ -354,21 +452,40 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
 
       {/* HUD */}
       {gameState === 'playing' && (
-        <div className="game-hud">
-          <div>
-            <div className="text-[8px] text-cyan/40 tracking-[2px] mb-1" style={{ fontFamily: "'Press Start 2P', monospace" }}>SCORE</div>
-            <div className="text-[20px] text-cyan font-black" style={{ fontFamily: "'Orbitron', sans-serif", textShadow: '0 0 10px rgba(0,240,255,0.5)' }}>{score}</div>
+        <>
+          <div className="game-hud">
+            <div>
+              <div className="text-[8px] text-cyan/40 tracking-[2px] mb-1" style={{ fontFamily: "'Press Start 2P', monospace" }}>SCORE</div>
+              <div className="text-[20px] text-cyan font-black" style={{ fontFamily: "'Orbitron', sans-serif", textShadow: '0 0 10px rgba(0,240,255,0.5)' }}>{score}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[8px] text-orange/40 tracking-[2px] mb-1" style={{ fontFamily: "'Press Start 2P', monospace" }}>HIGH</div>
+              <div className="text-[20px] text-orange font-black" style={{ fontFamily: "'Orbitron', sans-serif", textShadow: '0 0 10px rgba(255,106,0,0.5)' }}>{highScore}</div>
+            </div>
           </div>
-          <div className="text-right">
-            <div className="text-[8px] text-orange/40 tracking-[2px] mb-1" style={{ fontFamily: "'Press Start 2P', monospace" }}>HIGH</div>
-            <div className="text-[20px] text-orange font-black" style={{ fontFamily: "'Orbitron', sans-serif", textShadow: '0 0 10px rgba(255,106,0,0.5)' }}>{highScore}</div>
-          </div>
-        </div>
+          <button
+            onClick={() => { audioClick(); closeGame(); }}
+            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center text-white/40 border border-white/20 text-lg hover:text-white/80 hover:border-white/40 transition-all"
+            style={{ fontFamily: "'Press Start 2P', monospace", background: 'rgba(0,0,0,0.5)' }}
+            aria-label="Close game"
+          >
+            X
+          </button>
+        </>
       )}
 
       {/* Menu Overlay */}
       {gameState === 'menu' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10">
+          <button
+            onClick={() => { audioClick(); closeGame(); }}
+            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center text-white/40 border border-white/20 text-lg hover:text-white/80 hover:border-white/40 transition-all"
+            style={{ fontFamily: "'Press Start 2P', monospace", background: 'rgba(0,0,0,0.5)' }}
+            aria-label="Close game"
+          >
+            X
+          </button>
+
           <h2
             className="text-[clamp(28px,6vw,60px)] font-black text-cyan mb-4 tracking-[8px]"
             style={{ fontFamily: "'Orbitron', sans-serif", textShadow: '0 0 30px rgba(0,240,255,0.6)' }}
@@ -376,7 +493,7 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
             TRON GAME
           </h2>
           <p className="text-[11px] text-white/40 mb-2" style={{ fontFamily: "'Share Tech Mono', 'JetBrains Mono', monospace" }}>
-            Use arrow keys or WASD to steer your light cycle
+            {isMobile ? 'Swipe to steer your light cycle' : 'Use arrow keys or WASD to steer your light cycle'}
           </p>
           <p className="text-[11px] text-white/40 mb-8" style={{ fontFamily: "'Share Tech Mono', 'JetBrains Mono', monospace" }}>
             Avoid walls, your trail, and the orange opponent
@@ -384,7 +501,7 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
 
           <button
             className="text-[12px] text-cyan border-2 border-cyan px-8 py-3 tracking-[4px] transition-all hover:bg-cyan/10 mb-4"
-            style={{ fontFamily: "'Press Start 2P', monospace", background: 'none', cursor: 'none', boxShadow: '0 0 20px rgba(0,240,255,0.3)' }}
+            style={{ fontFamily: "'Press Start 2P', monospace", background: 'none', boxShadow: '0 0 20px rgba(0,240,255,0.3)' }}
             onMouseEnter={audioHover}
             onClick={() => { audioClick(); startGame(); }}
           >
@@ -393,11 +510,11 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
 
           <button
             className="text-[9px] text-white/30 border border-white/10 px-6 py-2 tracking-[2px] transition-all hover:text-white/60 hover:border-white/30"
-            style={{ fontFamily: "'Press Start 2P', monospace", background: 'none', cursor: 'none' }}
+            style={{ fontFamily: "'Press Start 2P', monospace", background: 'none' }}
             onMouseEnter={audioHover}
-            onClick={() => { audioClick(); onClose(); }}
+            onClick={() => { audioClick(); closeGame(); }}
           >
-            ESC — BACK
+            {isMobile ? 'BACK' : 'ESC \u2014 BACK'}
           </button>
         </div>
       )}
@@ -405,6 +522,15 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
       {/* Game Over */}
       {gameState === 'gameover' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 z-10">
+          <button
+            onClick={() => { audioClick(); closeGame(); }}
+            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center text-white/40 border border-white/20 text-lg hover:text-white/80 hover:border-white/40 transition-all"
+            style={{ fontFamily: "'Press Start 2P', monospace", background: 'rgba(0,0,0,0.5)' }}
+            aria-label="Close game"
+          >
+            X
+          </button>
+
           <h2
             className="text-[clamp(20px,5vw,48px)] font-black text-magenta mb-2 tracking-[6px]"
             style={{ fontFamily: "'Orbitron', sans-serif", textShadow: '0 0 30px rgba(255,0,222,0.6)' }}
@@ -426,13 +552,13 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
             className="text-[10px] text-cyan tracking-[3px] mb-8"
             style={{ fontFamily: "'Press Start 2P', monospace", animation: 'blink 1.2s step-end infinite' }}
           >
-            INSERT COIN TO CONTINUE
+            {isMobile ? 'TAP TO CONTINUE' : 'INSERT COIN TO CONTINUE'}
           </div>
 
           <div className="flex gap-4">
             <button
               className="text-[10px] text-cyan border border-cyan px-6 py-2.5 tracking-[3px] transition-all hover:bg-cyan/10"
-              style={{ fontFamily: "'Press Start 2P', monospace", background: 'none', cursor: 'none' }}
+              style={{ fontFamily: "'Press Start 2P', monospace", background: 'none' }}
               onMouseEnter={audioHover}
               onClick={() => { audioClick(); startGame(); }}
             >
@@ -440,9 +566,63 @@ export default function TronGame({ isOpen, onClose, onScore, audioHover, audioCr
             </button>
             <button
               className="text-[10px] text-white/30 border border-white/10 px-6 py-2.5 tracking-[3px] transition-all hover:text-white/60"
-              style={{ fontFamily: "'Press Start 2P', monospace", background: 'none', cursor: 'none' }}
+              style={{ fontFamily: "'Press Start 2P', monospace", background: 'none' }}
               onMouseEnter={audioHover}
-              onClick={() => { audioClick(); setGameState('menu'); onClose(); }}
+              onClick={() => { audioClick(); setGameState('menu'); closeGame(); }}
+            >
+              EXIT
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Win Screen */}
+      {gameState === 'win' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 z-10">
+          <button
+            onClick={() => { audioClick(); closeGame(); }}
+            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center text-white/40 border border-white/20 text-lg hover:text-white/80 hover:border-white/40 transition-all"
+            style={{ fontFamily: "'Press Start 2P', monospace", background: 'rgba(0,0,0,0.5)' }}
+            aria-label="Close game"
+          >
+            X
+          </button>
+
+          <h2
+            className="text-[clamp(20px,5vw,48px)] font-black text-cyan mb-2 tracking-[6px]"
+            style={{ fontFamily: "'Orbitron', sans-serif", textShadow: '0 0 30px rgba(0,240,255,0.6)' }}
+          >
+            YOU WIN
+          </h2>
+
+          <div className="text-[14px] text-orange tracking-[4px] mb-4" style={{ fontFamily: "'Press Start 2P', monospace" }}>
+            OPPONENT DEREZZED
+          </div>
+
+          <div className="text-[24px] font-black text-cyan my-4" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+            SCORE: {score}
+          </div>
+
+          {score >= highScore && score > 0 && (
+            <div className="text-[10px] text-orange tracking-[4px] mb-4" style={{ fontFamily: "'Press Start 2P', monospace", animation: 'blink 1s step-end infinite' }}>
+              ★ NEW HIGH SCORE ★
+            </div>
+          )}
+
+          <div className="flex gap-4 mt-4">
+            <button
+              className="text-[10px] text-cyan border border-cyan px-6 py-2.5 tracking-[3px] transition-all hover:bg-cyan/10"
+              style={{ fontFamily: "'Press Start 2P', monospace", background: 'none' }}
+              onMouseEnter={audioHover}
+              onClick={() => { audioClick(); startGame(); }}
+            >
+              PLAY AGAIN
+            </button>
+            <button
+              className="text-[10px] text-white/30 border border-white/10 px-6 py-2.5 tracking-[3px] transition-all hover:text-white/60"
+              style={{ fontFamily: "'Press Start 2P', monospace", background: 'none' }}
+              onMouseEnter={audioHover}
+              onClick={() => { audioClick(); setGameState('menu'); closeGame(); }}
             >
               EXIT
             </button>

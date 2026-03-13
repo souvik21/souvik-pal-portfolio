@@ -45,11 +45,12 @@ export function updateLightCycle(
   cycle: LightCycleState,
   w: number,
   h: number,
-  allCycles?: LightCycleState[]
+  allCycles?: LightCycleState[],
+  dt = 1
 ): void {
-  cycle.x += cycle.dx * cycle.speed;
-  cycle.y += cycle.dy * cycle.speed;
-  cycle.turnCooldown--;
+  cycle.x += cycle.dx * cycle.speed * dt;
+  cycle.y += cycle.dy * cycle.speed * dt;
+  cycle.turnCooldown -= dt;
 
   cycle.trail.push({ x: cycle.x, y: cycle.y });
   if (cycle.trail.length > cycle.maxTrail) cycle.trail.shift();
@@ -171,54 +172,76 @@ function drawCycleSprite(
 export function drawLightCycle(ctx: CanvasRenderingContext2D, cycle: LightCycleState): void {
   if (cycle.trail.length < 2) return;
 
-  for (let i = 1; i < cycle.trail.length; i++) {
-    const t = i / cycle.trail.length;
-    const alpha = t * 0.8;
-    const prev = cycle.trail[i - 1];
-    const cur = cycle.trail[i];
+  // Set shadow once for the entire trail
+  ctx.shadowColor = cycle.color;
+  ctx.shadowBlur = 8;
+  ctx.strokeStyle = cycle.color;
+  ctx.lineWidth = 1;
+  ctx.fillStyle = cycle.color;
 
-    if (Math.abs(cur.x - prev.x) > GRID_SIZE * 2 || Math.abs(cur.y - prev.y) > GRID_SIZE * 2) continue;
+  // Draw in alpha buckets to reduce draw calls
+  const bucketCount = 4;
+  const len = cycle.trail.length;
 
-    // Direction perpendicular for double rail
-    const dx = cur.x - prev.x, dy = cur.y - prev.y;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const nx = -dy / len * 3, ny = dx / len * 3;
-
-    ctx.shadowColor = cycle.color;
-    ctx.shadowBlur = 8;
-    ctx.strokeStyle = cycle.color;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = alpha;
+  for (let b = 0; b < bucketCount; b++) {
+    const startIdx = Math.max(1, Math.floor(b / bucketCount * len));
+    const endIdx = Math.floor((b + 1) / bucketCount * len);
+    const midT = ((startIdx + endIdx) / 2) / len;
+    const alpha = midT * 0.8;
 
     // Top rail
+    ctx.globalAlpha = alpha;
     ctx.beginPath();
-    ctx.moveTo(prev.x + nx, prev.y + ny);
-    ctx.lineTo(cur.x + nx, cur.y + ny);
+    for (let i = startIdx; i < endIdx && i < len; i++) {
+      const prev = cycle.trail[i - 1];
+      const cur = cycle.trail[i];
+      if (Math.abs(cur.x - prev.x) > GRID_SIZE * 2 || Math.abs(cur.y - prev.y) > GRID_SIZE * 2) continue;
+      const dx = cur.x - prev.x, dy = cur.y - prev.y;
+      const segLen = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / segLen * 3, ny = dx / segLen * 3;
+      ctx.moveTo(prev.x + nx, prev.y + ny);
+      ctx.lineTo(cur.x + nx, cur.y + ny);
+    }
     ctx.stroke();
 
     // Bottom rail
     ctx.beginPath();
-    ctx.moveTo(prev.x - nx, prev.y - ny);
-    ctx.lineTo(cur.x - nx, cur.y - ny);
+    for (let i = startIdx; i < endIdx && i < len; i++) {
+      const prev = cycle.trail[i - 1];
+      const cur = cycle.trail[i];
+      if (Math.abs(cur.x - prev.x) > GRID_SIZE * 2 || Math.abs(cur.y - prev.y) > GRID_SIZE * 2) continue;
+      const dx = cur.x - prev.x, dy = cur.y - prev.y;
+      const segLen = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / segLen * 3, ny = dx / segLen * 3;
+      ctx.moveTo(prev.x - nx, prev.y - ny);
+      ctx.lineTo(cur.x - nx, cur.y - ny);
+    }
     ctx.stroke();
 
     // Glow fill between rails
     ctx.globalAlpha = alpha * 0.15;
-    ctx.fillStyle = cycle.color;
     ctx.beginPath();
-    ctx.moveTo(prev.x + nx, prev.y + ny);
-    ctx.lineTo(cur.x + nx, cur.y + ny);
-    ctx.lineTo(cur.x - nx, cur.y - ny);
-    ctx.lineTo(prev.x - nx, prev.y - ny);
-    ctx.closePath();
+    for (let i = startIdx; i < endIdx && i < len; i++) {
+      const prev = cycle.trail[i - 1];
+      const cur = cycle.trail[i];
+      if (Math.abs(cur.x - prev.x) > GRID_SIZE * 2 || Math.abs(cur.y - prev.y) > GRID_SIZE * 2) continue;
+      const dx = cur.x - prev.x, dy = cur.y - prev.y;
+      const segLen = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / segLen * 3, ny = dx / segLen * 3;
+      ctx.moveTo(prev.x + nx, prev.y + ny);
+      ctx.lineTo(cur.x + nx, cur.y + ny);
+      ctx.lineTo(cur.x - nx, cur.y - ny);
+      ctx.lineTo(prev.x - nx, prev.y - ny);
+      ctx.closePath();
+    }
     ctx.fill();
   }
 
   // Head — pixel-art top-down bike sprite (p=3 for ambient scale)
   ctx.globalAlpha = 0.85;
+  ctx.shadowBlur = 0;
   drawCycleSprite(ctx, cycle.x, cycle.y, cycle.dx, cycle.dy, cycle.color, 3);
   ctx.globalAlpha = 1;
-  ctx.shadowBlur = 0;
 }
 
 export function drawGrid(

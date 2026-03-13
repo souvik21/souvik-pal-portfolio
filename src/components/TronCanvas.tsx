@@ -6,6 +6,7 @@ export default function TronCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cyclesRef = useRef<LightCycleState[]>([]);
   const pulseRef = useRef(0);
+  const lastTimeRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -29,7 +30,11 @@ export default function TronCanvas() {
     window.addEventListener('resize', resize);
 
     let raf: number;
-    const animate = () => {
+    const animate = (timestamp: number) => {
+      const delta = lastTimeRef.current ? (timestamp - lastTimeRef.current) / (1000 / 60) : 1;
+      lastTimeRef.current = timestamp;
+      const dt = Math.min(delta, 3); // clamp to avoid jumps on tab-switch
+
       const w = canvas.width;
       const h = canvas.height;
 
@@ -43,14 +48,14 @@ export default function TronCanvas() {
       ctx.fillRect(0, 0, w, h);
 
       // Data pulse — cycles 0 to 1 over ~8 seconds
-      pulseRef.current = (pulseRef.current + 0.002) % 1.5;
+      pulseRef.current = (pulseRef.current + 0.002 * dt) % 1.5;
       const pulse = pulseRef.current > 1 ? 0 : pulseRef.current;
 
       drawGrid(ctx, w, h, window.scrollY, pulse);
 
       const cycles = cyclesRef.current;
       cycles.forEach(cycle => {
-        updateLightCycle(cycle, w, h, cycles);
+        updateLightCycle(cycle, w, h, cycles, dt);
         drawLightCycle(ctx, cycle);
       });
 
