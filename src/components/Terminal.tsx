@@ -177,7 +177,7 @@ export default function Terminal({ onGameOpen }: TerminalProps) {
       className="relative z-[1] min-h-screen flex flex-col items-center justify-center px-5 py-20"
     >
       {/* Section header */}
-      <div className="text-center mb-12 derez-reveal">
+      <div className="text-center derez-reveal" style={{ marginBottom: '2rem' }}>
         <div
           className="text-[10px] tracking-[6px] uppercase"
           style={{ fontFamily: "'Press Start 2P', monospace", color: 'var(--magenta)', textShadow: '0 0 10px rgba(255,0,222,0.4)' }}

@@ -213,7 +213,6 @@ export default function SkillTree({ onHover }: SkillTreeProps) {
         >
           {skillsConfig.sectionTitle}
         </h2>
-        <div className="w-[120px] h-[2px] mx-auto mt-8" style={{ background: 'linear-gradient(90deg, transparent, var(--magenta), transparent)', boxShadow: '0 0 10px var(--magenta)' }} />
       </div>
 
       {/* Legend */}

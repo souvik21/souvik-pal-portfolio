@@ -45,67 +45,70 @@ export default function ProjectsSection({ onHover }: ProjectsSectionProps) {
         >
           {projectsConfig.sectionTitle}
         </h2>
-        <div className="w-[120px] h-[2px] mx-auto mt-8" style={{ background: 'linear-gradient(90deg, transparent, var(--magenta), transparent)', boxShadow: '0 0 10px var(--magenta)' }} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 max-w-[1280px] w-full px-5">
         {PROJECTS.map((project) => (
           <div
             key={project.num}
-            className={`project-card border border-cyan/[0.12] derez-reveal ${project.locked ? 'opacity-40' : ''}`}
-            style={{ background: 'rgba(5,5,9,0.88)', backdropFilter: 'blur(6px)', ...(project.locked ? { borderStyle: 'dashed' } : {}) }}
+            className={`hud-card derez-reveal ${project.locked ? 'opacity-40' : ''}`}
             onMouseEnter={onHover}
           >
-            <div className="flex justify-between items-start p-10 pb-0">
-              <span className="text-[10px] text-cyan-dim/50" style={{ fontFamily: "'Press Start 2P', monospace" }}>
-                {project.num}
-              </span>
-              <span
-                className={`text-[7px] px-2 py-1 tracking-[1px] border ${
-                  project.statusClass === 'coming-soon'
-                    ? 'text-orange bg-orange/10 border-orange/20'
-                    : 'text-cyan bg-cyan/10 border-cyan/20'
-                }`}
-                style={{ fontFamily: "'Press Start 2P', monospace" }}
-              >
-                {project.status}
-              </span>
-            </div>
+            <div className="hud-card-inner" style={{ padding: '2rem' }}>
+              {/* HUD decorations */}
+              <div className="hud-stripes" />
+              <div className="hud-header-line" />
 
-            <div className="p-10 pt-6">
-              <h3
-                className="text-[18px] font-bold tracking-[2px] mb-4 text-white"
-                style={{ fontFamily: "'Orbitron', sans-serif" }}
-              >
-                {project.title}
-              </h3>
-              <p className="text-[13px] text-white/50 leading-relaxed mb-7">
-                {project.tagline}
-              </p>
-              <div className="flex gap-2 flex-wrap mb-7">
-                {project.tech.map((t) => (
+              {/* Content overlay */}
+              <div className="relative z-10 p-14 pt-14 pb-12">
+                <div className="flex justify-between items-center mb-5">
+                  <span className="text-[8px] text-cyan/60" style={{ fontFamily: "'Press Start 2P', monospace" }}>
+                    {project.num}
+                  </span>
                   <span
-                    key={t}
-                    className="text-[7px] text-magenta border border-magenta/20 px-2 py-1 tracking-[1px] bg-magenta/[0.05]"
+                    className={`text-[6px] px-3 py-1.5 tracking-[1px] ${
+                      project.statusClass === 'coming-soon'
+                        ? 'text-black bg-cyan'
+                        : 'text-black bg-cyan'
+                    }`}
                     style={{ fontFamily: "'Press Start 2P', monospace" }}
                   >
-                    {t}
+                    {project.status}
                   </span>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            <div className="px-10 pb-10">
-              <a
-                href={project.link}
-                className={`play-btn inline-flex items-center gap-2 text-[10px] text-cyan bg-cyan/[0.05] border border-cyan/30 px-5 py-2.5 no-underline tracking-[2px] transition-all hover:bg-cyan/10 hover:border-cyan ${
-                  project.locked ? 'opacity-30 pointer-events-none' : ''
-                }`}
-                style={{ fontFamily: "'Press Start 2P', monospace", cursor: 'none', boxShadow: project.locked ? 'none' : undefined }}
-                onMouseEnter={onHover}
-              >
-                <span className="text-[14px]">▶</span> {project.cta}
-              </a>
+                <h3
+                  className="text-[15px] font-bold tracking-[2px] mb-3 text-white leading-snug"
+                  style={{ fontFamily: "'Orbitron', sans-serif" }}
+                >
+                  {project.title}
+                </h3>
+                <p className="text-[11px] text-white/50 leading-relaxed mb-5">
+                  {project.tagline}
+                </p>
+                <div className="flex gap-2 flex-wrap mb-5">
+                  {project.tech.map((t) => (
+                    <span
+                      key={t}
+                      className="text-[6px] text-cyan border border-cyan/25 px-2 py-1 tracking-[1px] bg-cyan/[0.06]"
+                      style={{ fontFamily: "'Press Start 2P', monospace" }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+
+                <a
+                  href={project.link}
+                  className={`play-btn inline-flex items-center gap-2 text-[8px] text-cyan bg-cyan/[0.06] border border-cyan/30 px-4 py-2 no-underline tracking-[2px] transition-all hover:bg-cyan/15 hover:border-cyan ${
+                    project.locked ? 'opacity-30 pointer-events-none' : ''
+                  }`}
+                  style={{ fontFamily: "'Press Start 2P', monospace", cursor: 'none', boxShadow: project.locked ? 'none' : undefined }}
+                  onMouseEnter={onHover}
+                >
+                  <span className="text-[12px]">▶</span> {project.cta}
+                </a>
+              </div>
             </div>
           </div>
         ))}

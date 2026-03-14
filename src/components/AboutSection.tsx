@@ -33,8 +33,8 @@ export default function AboutSection({ onHover, achievements }: AboutSectionProp
     <section id="about" ref={sectionRef} className="relative z-[1] min-h-screen flex flex-col items-center justify-center px-5 py-20">
       <div className="text-center mb-24 derez-reveal">
         <div
-          className="text-[10px] tracking-[6px] uppercase mb-8"
-          style={{ fontFamily: "'Press Start 2P', monospace", color: 'var(--magenta)', textShadow: '0 0 10px rgba(255,0,222,0.4)' }}
+          className="text-[10px] tracking-[6px] uppercase mb-8 section-subtitle-accent"
+          style={{ fontFamily: "'Press Start 2P', monospace", color: 'var(--magenta)', textShadow: '0 0 10px rgba(255,0,222,0.4)', padding: '0.5rem' }}
         >
           {about.sectionSubtitle}
         </div>
@@ -44,7 +44,6 @@ export default function AboutSection({ onHover, achievements }: AboutSectionProp
         >
           {about.sectionTitle}
         </h2>
-        <div className="w-[120px] h-[2px] mx-auto mt-8" style={{ background: 'linear-gradient(90deg, transparent, var(--magenta), transparent)', boxShadow: '0 0 10px var(--magenta)' }} />
       </div>
 
       <div className="max-w-[700px] w-full text-center px-5">

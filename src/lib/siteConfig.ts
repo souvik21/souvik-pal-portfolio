@@ -12,13 +12,28 @@ export const site = {
 // ─── Boot Sequence ──────────────────────────────────────────────────────────
 export const boot = {
   splashTitle: 'GREETINGS USER',
-  splashPrompt: 'CLICK ANYWHERE TO ENTER THE GRID & KNOW MORE ABOUT SOUVIK PAL',
-  footerLabel: 'TRON PORTFOLIO SYSTEM — PLAYER ONE INDUSTRIES',
+  splashPrompt: 'CLICK ANYWHERE TO ENTER THE GRID & KNOW MORE ABOUT SOUVIK',
+  footerLabel: 'A TRON INSPIRED PORTFOLIO SYSTEM',
+  idCard: {
+    headerLeft: '◈ ENCOM SYSTEM',
+    headerRight: 'SIGNAL ACTIVE',
+    label: 'USER',
+    name: 'SOUVIK PAL',
+    accessDots: '●●●●●●',
+    nexus: 'NEXUS: BACKEND-SYSTEMS',
+    secCode: '2026-SP-0314',
+    role: 'SENIOR BACKEND ENGINEER',
+    roleJp: 'シニアエンジニア',
+    org: 'QED42',
+    orgSub: 'AI SYSTEMS',
+    authText: 'AUTHORIZATION GRANTED TO THE ABOVE USER TO BUILD, DEPLOY, AND MAINTAIN ANY APPLICATION OR SYSTEM ON THE GRID. SPECIALIZING IN INTERACTIVE VISUALIZATIONS AND AI-POWERED TOOLS.',
+    footer: 'PROPERTY OF THE GRID',
+  },
   lines: [
     { text: '', delay: 200 },
     { text: '╔══════════════════════════════════════════════════╗', delay: 100 },
-    { text: '║  TRON PORTFOLIO SYSTEM v2.0.86                  ║', delay: 100 },
-    { text: '║  (c) 2026 PLAYER ONE INDUSTRIES                 ║', delay: 100 },
+    { text: '║  TRON PORTFOLIO SYSTEM v2.0.86                   ║', delay: 100 },
+    { text: '║  (c) 2026 ENCOM SYSTEMS                          ║', delay: 100 },
     { text: '╚══════════════════════════════════════════════════╝', delay: 300 },
     { text: '', delay: 100 },
     { text: '[BIOS] Initializing system memory.......... OK', delay: 150 },
@@ -42,7 +57,7 @@ export const boot = {
     { text: '[SYS]  Particle engine..................... ONLINE', delay: 100 },
     { text: '[SYS]  All systems operational.', delay: 300 },
     { text: '', delay: 100 },
-    { text: '> WELCOME TO THE GRID, PLAYER ONE.', delay: 500 },
+    { text: '> WELCOME TO THE GRID, PLAYER 2.', delay: 500 },
     { text: '> ENTERING PORTFOLIO ENVIRONMENT...', delay: 400 },
   ],
 };
@@ -68,7 +83,7 @@ export const navigation = {
 
 // ─── Terminal ───────────────────────────────────────────────────────────────
 export const terminal = {
-  sectionTitle: '— ABOUT PLAYER 1 —',
+  sectionTitle: '— ABOUT PLAYER ONE —',
   windowTitle: 'TRON TERMINAL',
   windowHint: 'type "help" to begin',
 
@@ -77,7 +92,6 @@ export const terminal = {
     { type: 'output' as const, text: '' },
     { type: 'success' as const, text: 'Available commands:' },
     { type: 'success' as const, text: '  about         Get to know about the player' },
-    { type: 'success' as const, text: '  skills        View the skill matrix' },
     { type: 'success' as const, text: '  ls projects   Browse all projects' },
     { type: 'success' as const, text: '  ls blogs      Browse all blog posts' },
     { type: 'success' as const, text: '  play          Launch the Tron mini-game' },
@@ -94,7 +108,6 @@ export const terminal = {
   whoami        Who are you?
   ls projects   List all projects
   ls blogs      List all blog posts
-  skills        Show skill summary
   cat readme    Read the README
   play          Launch Tron Game
   matrix        Toggle matrix effect
@@ -104,28 +117,29 @@ export const terminal = {
 
 Tip: Use ↑/↓ arrows for command history`,
 
-  aboutText: `╔════════════════════════════════════════╗
-║          IDENTITY DISC — BIO          ║
-╠════════════════════════════════════════╣
-║                                        ║
-║  Name:     PLAYER ONE                  ║
-║  Role:     Full-Stack Developer        ║
-║  Level:    SENIOR                      ║
-║  Base:     The Grid                    ║
-║                                        ║
-║  Specializations:                      ║
-║  ├─ Interactive Visualizations         ║
-║  ├─ AI/ML Integration                  ║
-║  ├─ Developer Experience               ║
-║  └─ Open Source                        ║
-║                                        ║
-║  Current Quest:                        ║
-║  Building tools that make complex      ║
-║  concepts visually intuitive.          ║
-║                                        ║
-╚════════════════════════════════════════╝`,
+  aboutText: 
+  `   ╔════════════════════════════════════════╗
+   ║          IDENTITY DISC — BIO           ║
+   ╠════════════════════════════════════════╣
+   ║                                        ║
+   ║  Name:     SOUVIK PAL                  ║
+   ║  Role:     SENIOR BE ENGINEER          ║
+   ║  Level:    SENIOR                      ║
+   ║  Base:     The Grid                    ║
+   ║                                        ║
+   ║  Specializations:                      ║
+   ║  ├─ ARTIFICIAL INTELLIGENCE            ║
+   ║  ├─ DRUPAL                             ║
+   ║  ├─ PHP                                ║
+   ║  └─ AWS                                ║
+   ║                                        ║
+   ║  Current Quest:                        ║
+   ║  Building tools that make complex      ║
+   ║  concepts visually intuitive.          ║
+   ║                                        ║
+   ╚════════════════════════════════════════╝`,
 
-  whoamiText: 'PLAYER ONE — Full-Stack Developer — Level: SENIOR',
+  whoamiText: 'PLAYER ONE — SOUVIK PAL — Level: SENIOR BACKEND ENGINEER',
 
   projectsList: `INSTALLED PROGRAMS:
 ─────────────────────────────────────────
@@ -156,11 +170,11 @@ Tip: Use ↑/↓ arrows for command history`,
 
   skillsText: `SKILL MATRIX:
 ─────────────────────────────────────────
-  FRONTEND  ████████████████████  5/5
-  ├─ React, Next.js, TypeScript, CSS
+  BACKEND  ████████████████████  5/5
+  ├─ Drupal, Python
 
   BACKEND   ████████████████░░░░  4/5
-  ├─ Node.js, Python, PostgreSQL, Drupal
+  ├─ Next.js, TypeScript, CSS
 
   DEVOPS    ████████████████░░░░  4/5
   ├─ Docker, K8s, CI/CD, Git
@@ -218,7 +232,7 @@ export const about = {
       'developer experience',
       'visually intuitive',
     ],
-    text: 'full-stack developer navigating the grid — building interactive visualizations, AI-powered tools, and open-source contributions. Specializing in web technologies, developer experience, and making complex concepts visually intuitive.',
+    text: 'senior-backend-engineer navigating the grid — building interactive visualizations, AI-powered tools, and open-source contributions. Specializing in web technologies, developer experience, and making complex concepts visually intuitive.',
   },
   stats: [
     { value: '12+', label: 'BLOG POSTS' },
